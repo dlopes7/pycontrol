@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name='pycontrol3',
+    name='pycontrol',
     description='Library for F5 iControl API',
     long_description="""pyControl is a Python-based library that integrates
                         with F5's BIG-IP iControl management API.""",
@@ -12,11 +12,10 @@ setup(
     url='https://github.com/dlopes7/pycontrol',
     keywords='iControl F5 API',
     #py_modules=['pycontrol'],
-    packages=['pycontrol3',],
+    packages=['pycontrol',],
     install_requires=['distribute', 'suds-py3'],
     platforms='any',
     classifiers=[
         'Operating System :: OS Independent',
-        'Programming Language :: Python',
     ],
 )
