@@ -86,7 +86,7 @@ def get_wsdls(options):
         parser.parse(wsdl_index_page)
         links = parser.get_hyperlinks()
         wsdl_names = [x[x.find('=')+1:] for x in links]
-    except URLError,e:
+    except URLError as e:
         log.error("Error getting list of WSDLs on BigIP: %s" % wsdl_list_url)
         raise
 
@@ -101,7 +101,7 @@ def get_wsdls(options):
         #    continue
         wsdl_url = "%s%s?WSDL=%s" % (options.bigip_url, ICONTROL_URI, wsdl_name)
         wsdl_file_name = os.path.join(options.wsdl_dir,"%s.wsdl" % (wsdl_name))
-        print "WSDL FILE NAME is: %s" % wsdl_file_name
+        print ('WSDL FILE NAME is: %s' % wsdl_file_name)
 
         if options.setup_force or not os.path.exists(wsdl_file_name):
             log.debug("Downloading %s..." % (wsdl_file_name))
@@ -209,7 +209,7 @@ class Options(object):
 if __name__ == '__main__':
 
     if len(sys.argv) < 4:
-        print "Usage: %s <hostname> <username> <password>"% sys.argv[0]
+        print ('Usage: %s <hostname> <username> <password>' % sys.argv[0])
         sys.exit()
 
     host,username,password = sys.argv[1:]

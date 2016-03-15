@@ -39,7 +39,9 @@ for more information on Suds. We thank Jeff for his excellent work!
 """
 
 import logging
-from urllib import pathname2url
+import ssl
+from urllib.request import pathname2url, ProxyHandler, HTTPBasicAuthHandler, HTTPSHandler
+from urllib.error import URLError
 import platform
 from suds.client import Client
 from suds.xsd.doctor import Import, ImportDoctor
@@ -57,6 +59,21 @@ SESSION_WSDL = 'System.Session'
 __version__ = '2.1'
 __build__ = 'r3'
 
+
+class HTTPSUnVerifiedCertTransport(HttpAuthenticated):
+    def __init__(self, *args, **kwargs):
+       HttpAuthenticated.__init__(self, *args, **kwargs)
+
+    def u2handlers(self):
+        handlers = []
+        handlers.append(ProxyHandler(self.proxy))
+        handlers.append(HTTPBasicAuthHandler()) # python ssl Context support - PEP 0466
+        if hasattr(ssl, '_create_unverified_context'):
+            ssl_context = ssl._create_unverified_context()
+            handlers.append(HTTPSHandler(context=ssl_context))
+        else:
+            handlers.append(HTTPSHandler())
+        return handlers
 
 class BIGIP(object):
 
@@ -87,7 +104,9 @@ class BIGIP(object):
         if self.debug == True:
             self._set_trace_logging()
 
-        location = '%s://%s%s' % (self.proto,self.hostname, ICONTROL_URI)
+        location = '{protocol}://{hostname}{uri}'.format(protocol=self.proto,
+                                                         hostname=self.hostname,
+                                                         uri=ICONTROL_URI)
 
         if self.sessions:
             '''This if block forces System.Session into index 0 in the wsdl list.'''
@@ -186,8 +205,15 @@ class BIGIP(object):
             t = HttpAuthenticated(username = self.username, password = self.password)
             c = Client(url, transport=t, doctor=DOCTOR,**kw)
         else:
-            c = Client(url, username=self.username,
-                    password=self.password,doctor=DOCTOR,**kw)
+            try:
+                c = Client(url, username=self.username,
+                        password=self.password,doctor=DOCTOR,**kw)
+            except URLError as e:
+                t =  HTTPSUnVerifiedCertTransport(username=self.username, password=self.password)
+                c = Client(url, username=self.username,
+                           password=self.password,doctor=DOCTOR,
+                           transport=t, **kw)
+
         return c
 
     def _set_url(self, wsdl):
@@ -303,7 +329,7 @@ class InterfaceInstance(object):
 def main():
     import sys
     if len(sys.argv) < 4:
-        print "Usage: %s <hostname> <username> <password>"% sys.argv[0]
+        print ('Usage: %s <hostname> <username> <password>'% sys.argv[0])
         sys.exit()
 
     a = sys.argv[1:]
@@ -316,10 +342,10 @@ def main():
 
     pools = b.LocalLB.Pool.get_list()
     version = b.LocalLB.Pool.get_version()
-    print "Version is: %s\n" % version
-    print "Pools:"
+    print ('Version is: {version}\n'.format(version=version))
+    print ('Pools:')
     for x in pools:
-        print "\t%s" % x
+        print ('{pool}'.format(pool=x))
 
 if __name__ == '__main__':
     main()
